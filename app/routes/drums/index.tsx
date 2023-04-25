@@ -37,6 +37,11 @@ export default function Drums() {
     if (!audioContext) {
       setAudioContext(new AudioContext());
     }
+
+    // cleanup audio context on unmount
+    return () => {
+      audioContext?.close();
+    }
   }, [audioContext])
 
   return (
