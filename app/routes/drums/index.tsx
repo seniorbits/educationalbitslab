@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
+import Pad from "./components/Pad";
 
 // Discuss: little quirks implementation
 const DRUMKIT_PRESET = new Map([
@@ -12,6 +13,7 @@ const DRUMKIT_PRESET = new Map([
   ["hatClosed", { key: "e", path: "audio/drum/hatClosed.wav" }],
   ["hatOpen", { key: "u", path: "audio/drum/hatOpen.wav" }]
 ]);
+
 export default function Drums() {
   const [loading, setLoading] = useState(false);
   const audioContext = useRef<AudioContext>();
@@ -55,7 +57,7 @@ export default function Drums() {
     }
   };
 
-  const handleKeyEvents = ({ key }: KeyboardEvent) => {
+  const handleKeyboardEvents = ({ key }: KeyboardEvent) => {
     DRUMKIT_PRESET.forEach((value, soundName) => {
       if (key == value.key) {
         playSound(soundName);
@@ -63,17 +65,20 @@ export default function Drums() {
     });
   };
 
-  const handlePlayMouseDown = (key: string) => () => playSound(key);
+  const handlePlayMouseDown = (soundName: string) => () => playSound(soundName);
 
-  const renderKeys = () => {
-    let keys: ReactNode[] = [];
-    for (const [key] of DRUMKIT_PRESET) {
-      keys.push(
-        <button key={key} className="bg-white shadow w-24 h-24 lg:w-64 lg:h-64 rounded"
-                onMouseDown={handlePlayMouseDown(key)}>{key}</button>
+  const renderPads = () => {
+    let pads: ReactNode[] = [];
+    for (const [soundName] of DRUMKIT_PRESET) {
+      pads.push(
+        <Pad
+          key={soundName}
+          onMouseDown={handlePlayMouseDown(soundName)}
+          soundName={soundName}
+        />
       );
     }
-    return keys;
+    return pads;
   };
 
   useEffect(() => {
@@ -84,20 +89,23 @@ export default function Drums() {
   }, [loadSounds]);
 
   useEffect(() => {
-    document.addEventListener("keydown", handleKeyEvents);
+    document.addEventListener("keydown", handleKeyboardEvents);
 
     return () => {
-      document.removeEventListener("keydown", handleKeyEvents);
+      document.removeEventListener("keydown", handleKeyboardEvents);
     };
   });
 
 
   return (
-    <main>
-      <h1>Drum machine</h1>
+    <main
+      className="text-gray-900 bg-white dark:bg-gray-900 dark:text-white flex justify-center w-full h-full lg:justify-between xl:justify-center xl:gap-16 -items-stretch lg:px-10 xl:px-0 ">
+      <h1
+        className="mb-3 text-transparent max-w-[40ch] leading-relaxed text-3xl sm:text-4xl bg-gradient-to-r from-green-500 via-blue-500 to-purple-500 bg-clip-text">Drum
+        machine</h1>
       <div className="container mx-auto px-8 grid grid-cols-3 lg:grid-cols-4 gap-2 lg:gap-4">
         {loading && <p>Loading...</p>}
-        {!loading && renderKeys()}
+        {!loading && renderPads()}
       </div>
     </main>
   );
