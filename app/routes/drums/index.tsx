@@ -2,6 +2,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import Pad from "./components/Pad";
 
+type BufferType = {
+  buffer: AudioBuffer;
+  gainValue: number;
+}
+
 // Discuss: little quirks implementation
 const DRUMKIT_PRESET = new Map([
   ["clap", { key: "'", path: "audio/drum/clap.wav" }],
@@ -14,10 +19,11 @@ const DRUMKIT_PRESET = new Map([
   ["hatOpen", { key: "u", path: "audio/drum/hatOpen.wav" }]
 ]);
 
+
 export default function Drums() {
   const [loading, setLoading] = useState(false);
   const audioContext = useRef<AudioContext>();
-  const audioBuffer = useRef<Record<string, AudioBuffer>>({});
+  const audioBuffer = useRef<Record<string, BufferType>>({});
 
   const loadSound = useCallback(async (soundName: string, { path: soundPath }: Record<string, string>) => {
     // Re-use the same context if it exists
@@ -33,7 +39,10 @@ export default function Drums() {
     const buf = await resp.arrayBuffer();
 
     // Decode the entire binary MP3 into an AudioBuffer
-    audioBuffer.current[soundName] = await audioContext.current.decodeAudioData(buf);
+    const buffer = await audioContext.current.decodeAudioData(buf);
+    const gainValue = 1;
+
+    audioBuffer.current[soundName] = { buffer, gainValue };
   }, []);
 
   const loadSounds = useCallback(async () => {
@@ -43,14 +52,23 @@ export default function Drums() {
   }, [loadSound]);
 
   const playSound = (soundName: string) => {
-    if (audioContext?.current) { // Now create a new "Buffer Source" node for playing AudioBuffers
+    if (audioContext?.current) {
+      // Now create a new "Buffer Source" node for playing AudioBuffers
       const source = audioContext.current.createBufferSource();
 
-      // Connect to destination
-      source.connect(audioContext.current.destination);
+      // Initialising gain
+      const gainNode = audioContext.current.createGain();
+      source.connect(gainNode);
+
+      // Changing gain value according to sound pad's control
+      gainNode.gain.value = audioBuffer.current[soundName].gainValue;
+
+      // Here we need to connect gain to destination, but not the source,
+      // so the flow would be [Buffer] -> [GainNode] -> [Destination]
+      gainNode.connect(audioContext.current.destination);
 
       // Assign the loaded buffer
-      source.buffer = audioBuffer.current[soundName];
+      source.buffer = audioBuffer.current[soundName].buffer;
 
       // Start (zero = play immediately)
       source.start(0);
@@ -67,6 +85,12 @@ export default function Drums() {
 
   const handlePlayMouseDown = (soundName: string) => () => playSound(soundName);
 
+  const handleGainChange = (soundName: string) => (value: number) => {
+    if (audioBuffer.current[soundName]) {
+      audioBuffer.current[soundName].gainValue = value;
+    }
+  };
+
   const renderPads = () => {
     let pads: ReactNode[] = [];
     for (const [soundName] of DRUMKIT_PRESET) {
@@ -74,7 +98,9 @@ export default function Drums() {
         <Pad
           key={soundName}
           onMouseDown={handlePlayMouseDown(soundName)}
+          onGainChange={handleGainChange(soundName)}
           soundName={soundName}
+          defaultGainValue={audioBuffer.current[soundName]?.gainValue}
         />
       );
     }
