@@ -4,14 +4,14 @@ import Pad from "./components/Pad";
 
 // Discuss: little quirks implementation
 const DRUMKIT_PRESET = new Map([
-  ["clap", { key: "'", path: "audio/drum/clap.wav" }],
-  ["rimshot", { key: ",", path: "audio/drum/rimshot.wav" }],
-  ["snap", { key: ".", path: "audio/drum/snap.wav" }],
-  ["crash", { key: "p", path: "audio/drum/crash.wav" }],
+  ["clap", { key: "q", path: "audio/drum/clap.wav" }],
+  ["rimshot", { key: "w", path: "audio/drum/rimshot.wav" }],
+  ["snap", { key: "e", path: "audio/drum/snap.wav" }],
+  ["crash", { key: "r", path: "audio/drum/crash.wav" }],
   ["kick", { key: "a", path: "audio/drum/kickG.wav" }],
-  ["snare", { key: "o", path: "audio/drum/snareG.wav" }],
-  ["hatClosed", { key: "e", path: "audio/drum/hatClosed.wav" }],
-  ["hatOpen", { key: "u", path: "audio/drum/hatOpen.wav" }]
+  ["snare", { key: "s", path: "audio/drum/snareG.wav" }],
+  ["hatClosed", { key: "d", path: "audio/drum/hatClosed.wav" }],
+  ["hatOpen", { key: "f", path: "audio/drum/hatOpen.wav" }]
 ]);
 
 

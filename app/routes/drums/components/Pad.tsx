@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ChangeEventHandler, MouseEventHandler, FC } from "react";
+import useKeyBinding from "../useKeyBinding.hook";
 
 type PadProps = {
   audioParams: { key: string, path: string },
@@ -55,28 +56,16 @@ const Pad: FC<PadProps> = ({
     }
   }, [audioContext, gainValue]);
 
-  const handleKeyboardEvents = ({ key }: KeyboardEvent) => {
-    if (key == audioParams.key) {
-      playSound();
-    }
-  };
-
   const handlePlayMouseDown: MouseEventHandler = () => playSound();
 
   const handleGainChange: ChangeEventHandler<HTMLInputElement> = (e) => {
     setGainValue(Number(e.currentTarget.value));
   };
 
-  useEffect(() => {
-    document.addEventListener("keydown", handleKeyboardEvents);
-
-    return () => {
-      document.removeEventListener("keydown", handleKeyboardEvents);
-    };
-  });
+  useKeyBinding(audioParams.key, playSound);
 
   useEffect(() => {
-    setLoading(true)
+    setLoading(true);
     prepareSound().then((decodedAudioBuffer?: AudioBuffer) => {
       audioBuffer.current = decodedAudioBuffer;
       setLoading(false);
@@ -90,7 +79,7 @@ const Pad: FC<PadProps> = ({
       className="bg-white shadow w-24 h-24 lg:w-64 lg:h-64 rounded"
       onMouseDown={handlePlayMouseDown}
     >
-      {audioTitle}{loading && ':Loading'}
+      {audioTitle}{loading ? ":Loading" : `: key "${audioParams.key}"`}
     </button>
     <input
       type="range"
