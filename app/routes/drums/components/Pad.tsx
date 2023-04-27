@@ -11,27 +11,65 @@ type PadProps = {
 const DEFAULT_GAIN_VALUE = 1;
 
 const Pad: FC<PadProps> = ({
-  audioParams,
-  audioContext,
-  audioTitle,
+ audioParams,
+ audioContext,
+ audioTitle
 }) => {
+  // We decide to store decoded audio buffer to ref to avoid unexpected re-renders,
+  // Avoid using const in such case to prevent sharing data between component instances
   const audioBuffer = useRef<AudioBuffer>();
+
+  // Using local react state to explicitly show loading progress, if we'd decide
+  // to use global loader for this purpose, we might be using react context from
+  // parent component
   const [loading, setLoading] = useState(false);
+
+  // Using local react state to store current gain level
   const [gainValue, setGainValue] = useState<number>(DEFAULT_GAIN_VALUE);
 
   const prepareSound = useCallback(async () => {
     if (audioContext) { // Re-use the audio buffer as a source
       const response = await fetch(audioParams.path);
 
+  // Reusable fetch file function, to abstract fetch function underneath it and
+  // provide error handling; can be extracted to single hook
+  const fetchFile = useCallback(async (filePath: string) => {
+    try {
+      return fetch(filePath);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      throw new Error(message);
+    }
+  }, []);
+
+  // Reusable decoding function, can be extracted to single hook
+  const decodeAudioBuffer = useCallback(async (response: Response) => {
+    try {
       // Turn into an array buffer of raw binary data
       const arrayBuffer = await response.arrayBuffer();
 
       // Decode the entire binary MP3 into an AudioBuffer
-      return await audioContext.decodeAudioData(arrayBuffer);
+      return audioContext?.decodeAudioData(arrayBuffer);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      throw new Error(message);
     }
-  }, [audioContext, audioParams.path]);
+  }, [audioContext]);
 
+  // Fetch, decode and assign decoded buffer to ref
+  const prepareSound = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await fetchFile(audioParams.path);
+      audioBuffer.current = await decodeAudioBuffer(response);
+      setLoading(false);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      setError(message);
+    }
+  }, [audioParams.path, decodeAudioBuffer, fetchFile]);
 
+  // Initialise playback connecting audio buffer to context and gain node
   const playSound = useCallback(() => {
     if (audioContext && audioBuffer.current) {
       // Now create a new "Buffer Source" node for playing AudioBuffers
@@ -56,24 +94,24 @@ const Pad: FC<PadProps> = ({
     }
   }, [audioContext, gainValue]);
 
-  const handlePlayMouseDown: MouseEventHandler = () => playSound();
+  // Sound pad mouse down handler, using here explicitly, so it can be extended
+  const handlePlayMouseDown = useCallback<MouseEventHandler>(() => playSound(), [playSound]);
 
-  const handleGainChange: ChangeEventHandler<HTMLInputElement> = (e) => {
+  // Sound gain level change handler
+  const handleGainChange = useCallback<ChangeEventHandler<HTMLInputElement>>((e) => {
     setGainValue(Number(e.currentTarget.value));
-  };
+  }, []);
 
+  // Bind the key press event to the sound playback
   useKeyBinding(audioParams.key, playSound);
 
+  // Process sound when component gets mounted or prepareSound function gets changed
   useEffect(() => {
-    setLoading(true);
-    prepareSound().then((decodedAudioBuffer?: AudioBuffer) => {
-      audioBuffer.current = decodedAudioBuffer;
-      setLoading(false);
-    }).catch(console.error);
+    void prepareSound();
   }, [prepareSound]);
 
 
-  return <div>
+  return <div className="pad-container">
     <button
       disabled={loading}
       className="bg-white shadow w-24 h-24 lg:w-64 lg:h-64 rounded"
