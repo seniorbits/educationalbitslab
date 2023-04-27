@@ -27,9 +27,8 @@ const Pad: FC<PadProps> = ({
   // Using local react state to store current gain level
   const [gainValue, setGainValue] = useState<number>(DEFAULT_GAIN_VALUE);
 
-  const prepareSound = useCallback(async () => {
-    if (audioContext) { // Re-use the audio buffer as a source
-      const response = await fetch(audioParams.path);
+  // Using local react state to store if error has occurred
+  const [error, setError] = useState<string>();
 
   // Reusable fetch file function, to abstract fetch function underneath it and
   // provide error handling; can be extracted to single hook
@@ -113,7 +112,7 @@ const Pad: FC<PadProps> = ({
 
   return <div className="pad-container">
     <button
-      disabled={loading}
+      disabled={loading || Boolean(error)}
       className="bg-white shadow w-24 h-24 lg:w-64 lg:h-64 rounded"
       onMouseDown={handlePlayMouseDown}
     >
@@ -127,6 +126,7 @@ const Pad: FC<PadProps> = ({
       value={gainValue}
       onChange={handleGainChange}
     />
+    {Boolean(error) && <div className="error">{error}</div>}
   </div>;
 };
 
