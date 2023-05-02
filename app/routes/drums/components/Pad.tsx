@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ChangeEventHandler, MouseEventHandler, FC } from "react";
 import useKeyBinding from "../useKeyBinding.hook";
+import fetchFile from "~/routes/drums/fetchFile";
 
 type PadProps = {
   audioParams: { key: string, path: string },
@@ -32,14 +33,7 @@ const Pad: FC<PadProps> = ({
 
   // Reusable fetch file function, to abstract fetch function underneath it and
   // provide error handling; can be extracted to single hook
-  const fetchFile = useCallback(async (filePath: string) => {
-    try {
-      return fetch(filePath);
-    } catch (e) {
-      const message = e instanceof Error ? e.message : String(e);
-      throw new Error(message);
-    }
-  }, []);
+
 
   // Reusable decoding function, can be extracted to single hook
   const decodeAudioBuffer = useCallback(async (response: Response) => {
@@ -66,7 +60,7 @@ const Pad: FC<PadProps> = ({
       const message = e instanceof Error ? e.message : String(e);
       setError(message);
     }
-  }, [audioParams.path, decodeAudioBuffer, fetchFile]);
+  }, [audioParams.path, decodeAudioBuffer]);
 
   // Initialise playback connecting audio buffer to context and gain node
   const playSound = useCallback(() => {
